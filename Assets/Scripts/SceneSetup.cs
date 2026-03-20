@@ -60,6 +60,9 @@ public class SceneSetup : MonoBehaviour
         gm.AddComponent<GameManager>();
         gm.AddComponent<WaveManager>();
         gm.AddComponent<UpgradeManager>();
+        gm.AddComponent<PathManager>();
+        gm.AddComponent<GoldSystem>();
+        gm.AddComponent<MaterialSystem>();
     }
 
     // ── Arena walls ───────────────────────────────────────────────────────
@@ -197,5 +200,10 @@ public class SceneSetup : MonoBehaviour
         deathGO.transform.SetParent(canvasGO.transform, false);
         var deathUI = deathGO.AddComponent<DeathScreenUI>();
         deathUI.Build(canvas);
+
+        // Path map (shown between bosses)
+        var pathGO = new GameObject("PathMapUI");
+        pathGO.transform.SetParent(canvasGO.transform, false);
+        pathGO.AddComponent<PathMapUI>();
     }
 }
