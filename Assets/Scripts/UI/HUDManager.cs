@@ -157,6 +157,13 @@ public class HUDManager : MonoBehaviour
         if (scoreText) scoreText.text = $"SCORE: {score:N0}";
     }
 
+    public void SetGold(int gold)
+    {
+        // Gold display is optional — only update if a goldText element exists.
+        // Add a Text field named goldText to Build() if a dedicated HUD element is desired.
+        // For now this is a no-op stub so GoldSystem can call it without errors.
+    }
+
     public void UpdateStats()
     {
         if (!PlayerStats.Instance) return;
