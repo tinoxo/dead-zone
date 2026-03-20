@@ -38,9 +38,14 @@ public class PlayerController : MonoBehaviour
         HUDManager.Instance?.UpdateHealth(HealthFrac);
     }
 
+    bool IsActive() {
+        var s = GameManager.Instance?.State;
+        return s == GameState.Playing || s == GameState.BossTime;
+    }
+
     void Update()
     {
-        if (GameManager.Instance?.State != GameState.Playing) return;
+        if (!IsActive()) return;
         HandleShooting();
         HandleDash();
 
@@ -53,7 +58,7 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (GameManager.Instance?.State != GameState.Playing) return;
+        if (!IsActive()) return;
         if (dashing) return;
 
         Vector2 input = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical")).normalized;
