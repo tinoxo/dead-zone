@@ -147,7 +147,8 @@ public class GameManager : MonoBehaviour
         sr.color  = color;
         go.transform.localScale = isOmega ? Vector3.one * 3.5f : Vector3.one * 2.2f;
 
-        WaveManager.Instance?.GetAliveList()?.Add(boss);
+        // Do NOT add path bosses to WaveManager's alive list —
+        // their death is handled entirely by BossDeathReporter → OnBossDefeated.
     }
 
     /// <summary>

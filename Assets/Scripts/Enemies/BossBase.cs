@@ -78,7 +78,12 @@ public abstract class BossBase : EnemyBase
 
         dead = true;
         GameManager.Instance?.EnemyKilled(ScoreValue);
-        WaveManager.Instance?.OnEnemyDied(this);
+
+        // Only notify WaveManager if this is a legacy wave boss (not a path-lattice boss).
+        // Path bosses are tracked by BossDeathReporter, not by the alive-enemies list.
+        if (GameManager.Instance?.State != GameState.BossTime)
+            WaveManager.Instance?.OnEnemyDied(this);
+
         Destroy(gameObject);
     }
 
