@@ -26,8 +26,31 @@ public class SceneSetup : MonoBehaviour
 
     void Start()
     {
-        // All singletons are now ready
+        // Apply selected character modifiers before game starts
+        ApplyCharacter();
         GameManager.Instance.StartGame();
+    }
+
+    void ApplyCharacter()
+    {
+        var c = GameData.SelectedCharacter;
+        var s = PlayerStats.Instance;
+        if (s == null || c == null) return;
+
+        s.MaxHealthMult     = c.HPMult;
+        s.MoveMult          = c.SpeedMult;
+        s.DamageMult        = c.DamageMult;
+        s.FireRateMult      = c.FireRateMult;
+        s.BulletSizeMult    = c.BulletSizeMult;
+        s.DashCooldownMult  = c.DashCDMult;
+        s.Piercing          = c.StartPiercing;
+        s.SplitShot         = c.StartSplitShot;
+        s.SplitCount        = c.StartSplitShot ? 1 : 0;
+        s.HasShield         = c.StartShield;
+
+        // Tint player to match character color
+        var sr = PlayerController.Instance?.GetComponent<SpriteRenderer>();
+        if (sr) sr.color = c.PrimaryColor;
     }
 
     // ── Managers ──────────────────────────────────────────────────────────
