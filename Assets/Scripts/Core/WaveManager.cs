@@ -329,6 +329,8 @@ public class WaveManager : MonoBehaviour
     {
         yield return new WaitForSeconds(0.8f);
 
+        ClearAllProjectiles();
+
         wavesCompletedThisSegment++;
 
         bool isFinalWave = wavesCompletedThisSegment >= wavesThisSegment;
@@ -341,7 +343,17 @@ public class WaveManager : MonoBehaviour
     IEnumerator WaveClearDelay(bool boss)
     {
         yield return new WaitForSeconds(boss ? 1.2f : 0.8f);
+        ClearAllProjectiles();
         GameManager.Instance?.WaveCleared(boss);
+    }
+
+    /// <summary>Destroys all live projectiles so nothing carries over between waves.</summary>
+    void ClearAllProjectiles()
+    {
+        foreach (var b in FindObjectsByType<PlayerBullet>(FindObjectsSortMode.None))
+            Destroy(b.gameObject);
+        foreach (var b in FindObjectsByType<EnemyBullet>(FindObjectsSortMode.None))
+            Destroy(b.gameObject);
     }
 
     void SpawnExitDoor(DoorRoomType type)

@@ -26,8 +26,8 @@ public class ItemPickup : MonoBehaviour
     float pulseTimer;
     bool  pickedUp;
 
-    const float LABEL_SHOW_DIST  = 3.5f;  // show label within this range
-    const float PICKUP_DIST      = 0.55f; // auto-pickup radius
+    const float LABEL_SHOW_DIST  = 5.5f;  // show label within this range
+    const float PICKUP_DIST      = 0.8f;  // auto-pickup radius
     const float BOB_SPEED        = 2.2f;
     const float BOB_AMPLITUDE    = 0.12f;
     const float LABEL_FADE_SPEED = 4f;
@@ -45,7 +45,7 @@ public class ItemPickup : MonoBehaviour
         gemSr = gameObject.AddComponent<SpriteRenderer>();
         gemSr.sprite       = SpriteFactory.Diamond(Data.GemColor);
         gemSr.sortingOrder = 6;
-        transform.localScale = Vector3.one * 0.55f;
+        transform.localScale = Vector3.one * 1.1f;
 
         // Trigger collider
         var col = gameObject.AddComponent<CircleCollider2D>();
@@ -55,15 +55,15 @@ public class ItemPickup : MonoBehaviour
         // ── World-space label ─────────────────────────────────────────────
         labelRoot = new GameObject("ItemLabel");
         labelRoot.transform.SetParent(transform, false);
-        labelRoot.transform.localPosition = Vector3.up * 1.6f;
+        labelRoot.transform.localPosition = Vector3.up * 2.2f;
 
         var canvas = labelRoot.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.WorldSpace;
         canvas.sortingOrder = 20;
 
         var rt = labelRoot.GetComponent<RectTransform>();
-        rt.sizeDelta = new Vector2(220f, 70f);
-        labelRoot.transform.localScale = Vector3.one * 0.013f;
+        rt.sizeDelta = new Vector2(320f, 110f);
+        labelRoot.transform.localScale = Vector3.one * 0.011f;
 
         labelGroup       = labelRoot.AddComponent<CanvasGroup>();
         labelGroup.alpha = 0f;
@@ -71,28 +71,28 @@ public class ItemPickup : MonoBehaviour
         // Rarity badge (top)
         rarityText = MakeLabelText(labelRoot.transform,
             Data.Rarity.ToString().ToUpper(),
-            fontSize: 13,
+            fontSize: 18,
             anchor: TextAnchor.UpperCenter,
             col: RarityColor(Data.Rarity),
-            aMin: new Vector2(0f, 0.72f), aMax: Vector2.one,
-            bold: false);
+            aMin: new Vector2(0f, 0.74f), aMax: Vector2.one,
+            bold: true);
 
         // Item name (bold, large)
         nameText = MakeLabelText(labelRoot.transform,
             Data.Name,
-            fontSize: 20,
+            fontSize: 28,
             anchor: TextAnchor.MiddleCenter,
             col: Color.white,
-            aMin: new Vector2(0f, 0.40f), aMax: new Vector2(1f, 0.74f),
+            aMin: new Vector2(0f, 0.38f), aMax: new Vector2(1f, 0.76f),
             bold: true);
 
         // Description (small, gray)
         descText = MakeLabelText(labelRoot.transform,
             Data.Description,
-            fontSize: 12,
+            fontSize: 16,
             anchor: TextAnchor.UpperCenter,
             col: new Color(0.78f, 0.78f, 0.78f),
-            aMin: Vector2.zero, aMax: new Vector2(1f, 0.42f),
+            aMin: Vector2.zero, aMax: new Vector2(1f, 0.40f),
             bold: false);
     }
 
@@ -111,7 +111,7 @@ public class ItemPickup : MonoBehaviour
 
         // Pulse the gem scale slightly
         float pulse = 1f + Mathf.Sin(pulseTimer) * 0.06f;
-        transform.localScale = Vector3.one * 0.55f * pulse;
+        transform.localScale = Vector3.one * 1.1f * pulse;
 
         // Proximity fade for label
         float dist = PlayerDistance();
