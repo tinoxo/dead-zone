@@ -336,9 +336,12 @@ public class WaveManager : MonoBehaviour
         bool isFinalWave = wavesCompletedThisSegment >= wavesThisSegment;
         DoorRoomType doorType = isFinalWave ? DoorRoomType.Boss : DoorRoomType.Combat;
 
-        // Spawn exit door — player walks through to continue
-        SpawnExitDoor(doorType);
+        // Show boon selection first — door spawns after the player picks a boon
+        GameManager.Instance?.WaveCleared_Segment(doorType);
     }
+
+    /// <summary>Public entry point so GameManager can spawn the door after a boon is picked.</summary>
+    public void ShowExitDoor(DoorRoomType type) => SpawnExitDoor(type);
 
     IEnumerator WaveClearDelay(bool boss)
     {

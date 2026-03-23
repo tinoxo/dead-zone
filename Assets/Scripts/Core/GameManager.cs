@@ -20,6 +20,9 @@ public class GameManager : MonoBehaviour
     public int TotalKills       { get; private set; }
     public Vector2 LastBossPosition { get; set; }
 
+    // Stored while waiting for boon pick in segment mode, then used to spawn the door
+    DoorRoomType pendingDoorType;
+
     void Awake()
     {
         if (Instance != null) { Destroy(gameObject); return; }
@@ -46,8 +49,14 @@ public class GameManager : MonoBehaviour
     {
         Wave++;
         State = GameState.Playing;
-        WaveManager.Instance.BeginWave(Wave);
         HUDManager.Instance?.SetWave(Wave);
+
+        // In path-lattice mode use the segment-aware spawner (respects CurrentTheme).
+        // Legacy mode (no PathManager) uses the old wave scaler.
+        if (PathManager.Instance != null)
+            WaveManager.Instance?.StartWave(0);
+        else
+            WaveManager.Instance?.BeginWave(Wave);
     }
 
     public void WaveCleared(bool isBoss)
@@ -56,9 +65,25 @@ public class GameManager : MonoBehaviour
         UpgradeManager.Instance.ShowUpgradeSelection(isBoss);
     }
 
+    /// <summary>
+    /// Called by WaveManager in segment mode when all enemies are dead.
+    /// Shows the boon selection; the door spawns only AFTER a boon is picked.
+    /// </summary>
+    public void WaveCleared_Segment(DoorRoomType doorType)
+    {
+        pendingDoorType = doorType;
+        State = GameState.Upgrading;
+        bool isBoss = doorType == DoorRoomType.Boss;
+        UpgradeManager.Instance?.ShowUpgradeSelection(isBoss);
+    }
+
     public void UpgradePicked()
     {
-        NextWave();
+        // Segment mode: spawn the door now that the boon has been picked
+        if (PathManager.Instance != null)
+            WaveManager.Instance?.ShowExitDoor(pendingDoorType);
+        else
+            NextWave();
     }
 
     public void EnemyKilled(int pts)
