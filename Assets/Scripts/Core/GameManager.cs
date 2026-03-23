@@ -178,6 +178,18 @@ public class GameManager : MonoBehaviour
         PathManager.Instance?.OnBossDefeated();
     }
 
+    /// <summary>
+    /// Called by a Path door when the player walks through it.
+    /// Advances the wave counter, sets state to Playing, and starts the chosen segment.
+    /// </summary>
+    public void PathChosen(bool goLeft)
+    {
+        Wave++;
+        State = GameState.Playing;
+        HUDManager.Instance?.SetWave(Wave);
+        PathManager.Instance?.ChoosePath(goLeft);
+    }
+
     /// <summary>Called when Omega (final boss) is defeated — run complete.</summary>
     public void PlayerWon()
     {

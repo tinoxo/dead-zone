@@ -130,12 +130,12 @@ public class PathManager : MonoBehaviour
         }
         else
         {
-            // Show path selection UI
+            // Spawn two physical path-choice doors — player walks through one to choose
             BossData left  = NextBossLeft;
             BossData right = NextBossRight;
-            string matName = defeated.MaterialName;
-            int    matAmt  = defeated.MaterialReward;
-            PathMapUI.Instance?.Show(left, right, matName, matAmt);
+            Debug.Log($"[PathManager] Spawning path doors — LEFT: {left?.Name}  RIGHT: {right?.Name}");
+            if (left  != null) RoomDoor.SpawnPathDoor(new Vector2(-8f, 2f), left,  choosingLeft: true);
+            if (right != null) RoomDoor.SpawnPathDoor(new Vector2( 8f, 2f), right, choosingLeft: false);
         }
     }
 }
