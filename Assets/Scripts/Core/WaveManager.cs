@@ -322,29 +322,53 @@ public class WaveManager : MonoBehaviour
 
     // ── Clear delay coroutines ─────────────────────────────────────────────
 
+    // Track current door so we can clean it up if needed
+    RoomDoor activeDoor;
+
     IEnumerator SegmentWaveClearDelay()
     {
         yield return new WaitForSeconds(0.8f);
 
         wavesCompletedThisSegment++;
 
-        if (wavesCompletedThisSegment >= wavesThisSegment)
-        {
-            // All waves in the segment cleared — time for the boss
-            Debug.Log($"[WaveManager] Segment complete ({wavesCompletedThisSegment}/{wavesThisSegment} waves). Spawning boss.");
-            GameManager.Instance?.SpawnSegmentBoss();
-        }
-        else
-        {
-            // More waves remaining
-            Debug.Log($"[WaveManager] Wave cleared ({wavesCompletedThisSegment}/{wavesThisSegment}). Starting next wave.");
-            GameManager.Instance?.NextWave();
-        }
+        bool isFinalWave = wavesCompletedThisSegment >= wavesThisSegment;
+        DoorRoomType doorType = isFinalWave ? DoorRoomType.Boss : DoorRoomType.Combat;
+
+        // Spawn exit door — player walks through to continue
+        SpawnExitDoor(doorType);
     }
 
     IEnumerator WaveClearDelay(bool boss)
     {
         yield return new WaitForSeconds(boss ? 1.2f : 0.8f);
         GameManager.Instance?.WaveCleared(boss);
+    }
+
+    void SpawnExitDoor(DoorRoomType type)
+    {
+        // Clean up any lingering door
+        if (activeDoor != null) Destroy(activeDoor.gameObject);
+
+        // Spawn door near the right wall
+        Vector2 pos = new Vector2(15f, 0f);
+        activeDoor = RoomDoor.Spawn(pos, type);
+        Debug.Log($"[WaveManager] Spawned {type} door. Walk through to continue.");
+    }
+
+    /// <summary>Called by RoomDoor when the player walks through.</summary>
+    public void OnDoorEntered(DoorRoomType type)
+    {
+        activeDoor = null;
+
+        if (type == DoorRoomType.Boss)
+        {
+            Debug.Log($"[WaveManager] Segment complete ({wavesCompletedThisSegment}/{wavesThisSegment} waves). Spawning boss.");
+            GameManager.Instance?.SpawnSegmentBoss();
+        }
+        else
+        {
+            Debug.Log($"[WaveManager] Wave cleared ({wavesCompletedThisSegment}/{wavesThisSegment}). Starting next wave.");
+            GameManager.Instance?.NextWave();
+        }
     }
 }
