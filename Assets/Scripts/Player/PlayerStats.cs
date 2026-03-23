@@ -1,4 +1,6 @@
 using UnityEngine;
+using System.Collections.Generic;
+using System.Linq;
 
 public class PlayerStats : MonoBehaviour
 {
@@ -27,6 +29,19 @@ public class PlayerStats : MonoBehaviour
     [HideInInspector] public bool  SplitShot  = false;
     [HideInInspector] public int   SplitCount = 0;
     [HideInInspector] public bool  HasShield  = false;
+
+    // ── Active items (collected this run) ─────────────────────────────────
+    public List<ItemDefinition> ActiveItems { get; private set; } = new List<ItemDefinition>();
+
+    public bool HasItem(ItemEffectType t)  => ActiveItems.Any(i => i.EffectType == t);
+    public int  ItemCount(ItemEffectType t)=> ActiveItems.Count(i => i.EffectType == t);
+    public float ItemValue(ItemEffectType t)
+    {
+        var items = ActiveItems.Where(i => i.EffectType == t).ToList();
+        return items.Count > 0 ? items.Sum(i => i.Value) : 0f;
+    }
+
+    public void AddItem(ItemDefinition def) => ActiveItems.Add(def);
 
     // ── Computed properties ───────────────────────────────────────────────
     public float MoveSpeed    => BaseMoveSpeed    * MoveMult;

@@ -121,6 +121,9 @@ public class HUDManager : MonoBehaviour
 
         // Init stats display
         UpdateStats();
+
+        // Item pickup banner
+        BuildBanner(canvas);
     }
 
     // ── Public Update Methods ─────────────────────────────────────────────
@@ -278,6 +281,83 @@ public class HUDManager : MonoBehaviour
         rect.anchoredPosition = pos;
         rect.sizeDelta        = new Vector2(200, 24);
         return t;
+    }
+
+    // ── Item pickup banner ────────────────────────────────────────────────
+    GameObject bannerGO;
+    Text       bannerText;
+
+    void BuildBanner(Canvas canvas)
+    {
+        bannerGO = new GameObject("ItemBanner");
+        bannerGO.transform.SetParent(canvas.transform, false);
+
+        var bg = bannerGO.AddComponent<Image>();
+        bg.color = new Color(0f, 0f, 0f, 0f);
+
+        var rt = bg.rectTransform;
+        rt.anchorMin = new Vector2(0.2f, 0.55f);
+        rt.anchorMax = new Vector2(0.8f, 0.68f);
+        rt.offsetMin = Vector2.zero;
+        rt.offsetMax = Vector2.zero;
+
+        bannerText = new GameObject("BannerText").AddComponent<Text>();
+        bannerText.transform.SetParent(bannerGO.transform, false);
+        bannerText.font      = GetFont();
+        bannerText.fontSize  = 22;
+        bannerText.fontStyle = FontStyle.Bold;
+        bannerText.alignment = TextAnchor.MiddleCenter;
+        bannerText.color     = Color.white;
+        var trt = bannerText.rectTransform;
+        trt.anchorMin = Vector2.zero;
+        trt.anchorMax = Vector2.one;
+        trt.offsetMin = Vector2.zero;
+        trt.offsetMax = Vector2.zero;
+
+        bannerGO.SetActive(false);
+    }
+
+    public void ShowItemPickupBanner(ItemDefinition def)
+    {
+        if (bannerGO == null) return;
+        StopCoroutine("BannerRoutine");
+        StartCoroutine(BannerRoutine(def));
+    }
+
+    IEnumerator BannerRoutine(ItemDefinition def)
+    {
+        Color rarityCol = def.Rarity switch {
+            ItemRarity.Legendary => new Color(1f,   0.75f, 0.1f),
+            ItemRarity.Rare      => new Color(0.5f, 0.6f,  1f),
+            ItemRarity.Uncommon  => new Color(0.2f, 0.9f,  0.3f),
+            _                    => new Color(0.85f,0.85f, 0.85f)
+        };
+
+        bannerText.text  = $"ITEM COLLECTED:  {def.Name}";
+        bannerText.color = rarityCol;
+        bannerGO.SetActive(true);
+
+        // Fade in
+        var img = bannerGO.GetComponent<Image>();
+        for (float t = 0; t < 0.3f; t += Time.deltaTime)
+        {
+            img.color = new Color(0, 0, 0, Mathf.Lerp(0f, 0.55f, t / 0.3f));
+            yield return null;
+        }
+
+        yield return new WaitForSeconds(1.8f);
+
+        // Fade out
+        for (float t = 0; t < 0.4f; t += Time.deltaTime)
+        {
+            float a = Mathf.Lerp(1f, 0f, t / 0.4f);
+            bannerText.color = new Color(rarityCol.r, rarityCol.g, rarityCol.b, a);
+            img.color = new Color(0, 0, 0, 0.55f * a);
+            yield return null;
+        }
+
+        bannerGO.SetActive(false);
+        bannerText.color = rarityCol;
     }
 
     Font GetFont()

@@ -61,6 +61,10 @@ public abstract class BossBase : EnemyBase
 
     protected override void Die()
     {
+        // Store position so item pair can spawn here
+        if (GameManager.Instance != null)
+            GameManager.Instance.LastBossPosition = transform.position;
+
         // Bigger death explosion for bosses
         Color c = sr ? sr.color : Color.red;
         for (int i = 0; i < 30; i++)

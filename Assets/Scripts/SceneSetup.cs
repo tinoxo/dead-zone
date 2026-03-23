@@ -63,6 +63,7 @@ public class SceneSetup : MonoBehaviour
         gm.AddComponent<PathManager>();
         gm.AddComponent<GoldSystem>();
         gm.AddComponent<MaterialSystem>();
+        gm.AddComponent<ItemManager>();
     }
 
     // ── Arena walls ───────────────────────────────────────────────────────

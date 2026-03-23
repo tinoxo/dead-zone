@@ -18,6 +18,7 @@ public class GameManager : MonoBehaviour
     public int Wave             { get; private set; }
     public int Score            { get; private set; }
     public int TotalKills       { get; private set; }
+    public Vector2 LastBossPosition { get; set; }
 
     void Awake()
     {
@@ -168,6 +169,10 @@ public class GameManager : MonoBehaviour
 
         // Bank gold after boss
         GoldSystem.Instance?.BankAfterBoss();
+
+        // Spawn item pair where boss died (stored in PathManager)
+        Vector2 bossPos = LastBossPosition;
+        ItemManager.Instance?.SpawnItemPair(bossPos);
 
         // Hand off to path manager (it will show PathMapUI or end the run)
         PathManager.Instance?.OnBossDefeated();
