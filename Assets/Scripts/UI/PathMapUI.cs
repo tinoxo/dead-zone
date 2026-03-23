@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 /// <summary>
 /// Full-screen path-selection overlay shown between bosses.
@@ -15,8 +16,20 @@ public class PathMapUI : MonoBehaviour
         if (Instance != null) { Destroy(gameObject); return; }
         Instance = this;
         DontDestroyOnLoad(gameObject);
+        EnsureEventSystem();
         BuildUI();
         Hide();
+    }
+
+    void EnsureEventSystem()
+    {
+        if (FindFirstObjectByType<EventSystem>() == null)
+        {
+            var es = new GameObject("PathMapEventSystem");
+            es.AddComponent<EventSystem>();
+            es.AddComponent<StandaloneInputModule>();
+            DontDestroyOnLoad(es);
+        }
     }
 
     // ── UI references ──────────────────────────────────────────────────────
@@ -230,13 +243,13 @@ public class PathMapUI : MonoBehaviour
 
         var img   = go.AddComponent<Image>();
         img.color = color;
-        img.type  = Image.Type.Sliced;
+        img.type  = Image.Type.Simple;
 
         var rt       = go.GetComponent<RectTransform>();
         rt.anchorMin = Vector2.zero;
         rt.anchorMax = Vector2.one;
-        rt.offsetMin = new Vector2(-3f, -3f);
-        rt.offsetMax = new Vector2( 3f,  3f);
+        rt.offsetMin = new Vector2(-4f, -4f);
+        rt.offsetMax = new Vector2( 4f,  4f);
 
         // Send outline behind child text elements
         go.transform.SetAsFirstSibling();
