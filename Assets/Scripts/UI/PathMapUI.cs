@@ -1,284 +1,218 @@
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.EventSystems;
 
 /// <summary>
 /// Full-screen path-selection overlay shown between bosses.
-/// Built entirely in code — no prefabs required.
+/// Works exactly like UpgradeUI — built into the main UICanvas, no nested canvas.
 /// </summary>
 public class PathMapUI : MonoBehaviour
 {
-    // ── Singleton ──────────────────────────────────────────────────────────
     public static PathMapUI Instance { get; private set; }
+    void Awake() => Instance = this;
 
-    void Awake()
-    {
-        if (Instance != null) { Destroy(gameObject); return; }
-        Instance = this;
-        DontDestroyOnLoad(gameObject);
-        EnsureEventSystem();
-        BuildUI();
-        Hide();
-    }
-
-    void EnsureEventSystem()
-    {
-        if (FindFirstObjectByType<EventSystem>() == null)
-        {
-            var es = new GameObject("PathMapEventSystem");
-            es.AddComponent<EventSystem>();
-            es.AddComponent<StandaloneInputModule>();
-            DontDestroyOnLoad(es);
-        }
-    }
-
-    // ── UI references ──────────────────────────────────────────────────────
-    Canvas      canvas;
-    GameObject  root;           // the semi-transparent overlay
+    // ── UI References ─────────────────────────────────────────────────────
+    GameObject  overlay;
     Text        titleText;
     Text        depthText;
-    Text        materialEarnedText;
+    Text        materialText;
 
-    // Left panel
-    GameObject  leftPanel;
+    // Left card
+    GameObject  leftCard;
+    Text        leftName, leftReward, leftRoom, leftDesc, leftSide;
     Image       leftBorder;
-    Text        leftNameText;
-    Text        leftRewardText;
-    Text        leftRoomText;
-    Text        leftDescText;
-    Text        leftSideLabel;
-    Button      leftButton;
 
-    // Right panel
-    GameObject  rightPanel;
+    // Right card
+    GameObject  rightCard;
+    Text        rightName, rightReward, rightRoom, rightDesc, rightSide;
     Image       rightBorder;
-    Text        rightNameText;
-    Text        rightRewardText;
-    Text        rightRoomText;
-    Text        rightDescText;
-    Text        rightSideLabel;
-    Button      rightButton;
 
-    // ── Build UI in code ───────────────────────────────────────────────────
-    void BuildUI()
+    BossData pendingLeft, pendingRight;
+
+    // ── Called by SceneSetup ──────────────────────────────────────────────
+    public void Build(Canvas canvas)
     {
-        // Canvas
-        var canvasGo = new GameObject("PathMapCanvas");
-        canvasGo.transform.SetParent(transform);
-        canvas = canvasGo.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 100;
-        canvasGo.AddComponent<CanvasScaler>().uiScaleMode =
-            CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        canvasGo.AddComponent<GraphicRaycaster>();
-
-        // Full-screen semi-transparent overlay
-        root = MakePanel(canvasGo, "PathMapRoot",
-            new Color(0.05f, 0.05f, 0.08f, 0.92f),
-            Vector2.zero, Vector2.one,
-            Vector2.zero, Vector2.zero);
+        // Full-screen dark overlay
+        overlay = MakePanel(canvas.transform, "PathMapOverlay",
+            new Color(0.04f, 0.04f, 0.10f, 0.94f),
+            Vector2.zero, Vector2.one);
 
         // Title
-        titleText = MakeText(root, "TitleText",
-            "CHOOSE YOUR PATH",
-            36, FontStyle.Bold, TextAnchor.MiddleCenter,
-            Color.white,
-            new Vector2(0.15f, 0.82f), new Vector2(0.85f, 0.95f));
+        titleText = MakeText(overlay.transform, "CHOOSE YOUR PATH",
+            36, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white,
+            new Vector2(0.1f, 0.84f), new Vector2(0.9f, 0.97f));
 
-        // Depth indicator
-        depthText = MakeText(root, "DepthText",
-            "DEPTH 1 / 4",
-            20, FontStyle.Normal, TextAnchor.MiddleCenter,
-            new Color(0.75f, 0.75f, 0.75f),
-            new Vector2(0.3f, 0.76f), new Vector2(0.7f, 0.83f));
+        // Depth line
+        depthText = MakeText(overlay.transform, "DEPTH 1 / 4",
+            18, FontStyle.Normal, TextAnchor.MiddleCenter,
+            new Color(0.7f, 0.7f, 0.7f),
+            new Vector2(0.3f, 0.77f), new Vector2(0.7f, 0.86f));
 
-        // LEFT choice panel
-        leftPanel  = MakePanel(root, "LeftPanel",
-            new Color(0.10f, 0.10f, 0.14f, 1f),
-            new Vector2(0.04f, 0.18f), new Vector2(0.47f, 0.74f),
-            Vector2.zero, Vector2.zero);
+        // Material earned notice (bottom)
+        materialText = MakeText(overlay.transform, "",
+            15, FontStyle.Normal, TextAnchor.MiddleCenter,
+            new Color(0.5f, 1f, 0.5f),
+            new Vector2(0.1f, 0.04f), new Vector2(0.9f, 0.13f));
 
-        leftBorder  = leftPanel.GetComponent<Image>();
+        // Build left card
+        leftCard = BuildCard(overlay.transform,
+            new Vector2(0.04f, 0.15f), new Vector2(0.47f, 0.76f),
+            ref leftBorder, ref leftName, ref leftReward,
+            ref leftRoom, ref leftDesc, ref leftSide);
 
-        // Add a coloured outline image layered on top of the panel
-        leftBorder  = MakeOutline(leftPanel, "LeftBorder", Color.white);
+        // Click listener on left card
+        var leftBtn = leftCard.AddComponent<Button>();
+        leftBtn.transition = Selectable.Transition.ColorTint;
+        leftBtn.onClick.AddListener(() => OnChoose(true));
 
-        leftNameText  = MakeText(leftPanel, "LeftName",  "BOSS",  28, FontStyle.Bold,  TextAnchor.MiddleCenter, Color.white,        new Vector2(0.05f,0.78f), new Vector2(0.95f,0.96f));
-        leftRewardText= MakeText(leftPanel, "LeftReward","4x Material", 18, FontStyle.Normal,TextAnchor.MiddleCenter, new Color(1f,0.9f,0.3f), new Vector2(0.05f,0.64f), new Vector2(0.95f,0.78f));
-        leftRoomText  = MakeText(leftPanel, "LeftRoom",  "[CHAOS]",18, FontStyle.Italic, TextAnchor.MiddleCenter, new Color(0.7f,0.85f,1f),  new Vector2(0.05f,0.52f), new Vector2(0.95f,0.65f));
-        leftDescText  = MakeText(leftPanel, "LeftDesc",  "...",   15, FontStyle.Normal, TextAnchor.UpperCenter,  new Color(0.85f,0.85f,0.85f),new Vector2(0.07f,0.28f), new Vector2(0.93f,0.52f));
-        leftSideLabel = MakeText(leftPanel, "LeftSide",  "STAY",  22, FontStyle.Bold,   TextAnchor.MiddleCenter, new Color(0.4f,1f,0.4f),    new Vector2(0.05f,0.08f), new Vector2(0.95f,0.26f));
+        // Build right card
+        rightCard = BuildCard(overlay.transform,
+            new Vector2(0.53f, 0.15f), new Vector2(0.96f, 0.76f),
+            ref rightBorder, ref rightName, ref rightReward,
+            ref rightRoom, ref rightDesc, ref rightSide);
 
-        leftButton = leftPanel.AddComponent<Button>();
-        leftButton.onClick.AddListener(() => OnPanelClicked(true));
+        var rightBtn = rightCard.AddComponent<Button>();
+        rightBtn.transition = Selectable.Transition.ColorTint;
+        rightBtn.onClick.AddListener(() => OnChoose(false));
 
-        // RIGHT choice panel
-        rightPanel = MakePanel(root, "RightPanel",
-            new Color(0.10f, 0.10f, 0.14f, 1f),
-            new Vector2(0.53f, 0.18f), new Vector2(0.96f, 0.74f),
-            Vector2.zero, Vector2.zero);
-
-        rightBorder   = MakeOutline(rightPanel, "RightBorder", Color.white);
-
-        rightNameText  = MakeText(rightPanel,"RightName",  "BOSS",  28, FontStyle.Bold,  TextAnchor.MiddleCenter, Color.white,        new Vector2(0.05f,0.78f), new Vector2(0.95f,0.96f));
-        rightRewardText= MakeText(rightPanel,"RightReward","4x Material",18,FontStyle.Normal,TextAnchor.MiddleCenter,new Color(1f,0.9f,0.3f),new Vector2(0.05f,0.64f),new Vector2(0.95f,0.78f));
-        rightRoomText  = MakeText(rightPanel,"RightRoom",  "[MARKET]",18, FontStyle.Italic,TextAnchor.MiddleCenter, new Color(0.7f,0.85f,1f), new Vector2(0.05f,0.52f), new Vector2(0.95f,0.65f));
-        rightDescText  = MakeText(rightPanel,"RightDesc",  "...",   15, FontStyle.Normal, TextAnchor.UpperCenter,  new Color(0.85f,0.85f,0.85f),new Vector2(0.07f,0.28f),new Vector2(0.93f,0.52f));
-        rightSideLabel = MakeText(rightPanel,"RightSide",  "CROSS", 22, FontStyle.Bold,   TextAnchor.MiddleCenter, new Color(1f,0.6f,0.2f),   new Vector2(0.05f,0.08f), new Vector2(0.95f,0.26f));
-
-        rightButton = rightPanel.AddComponent<Button>();
-        rightButton.onClick.AddListener(() => OnPanelClicked(false));
-
-        // Material earned notice (bottom strip)
-        materialEarnedText = MakeText(root, "MaterialEarned",
-            "",
-            16, FontStyle.Normal, TextAnchor.MiddleCenter,
-            new Color(0.6f, 1f, 0.6f),
-            new Vector2(0.1f, 0.04f), new Vector2(0.9f, 0.14f));
+        overlay.SetActive(false);
     }
 
-    // ── Public API ─────────────────────────────────────────────────────────
-
-    /// <summary>Show the path selection screen.</summary>
-    public void Show(BossData leftChoice, BossData rightChoice,
-                     string materialEarned, int materialAmount)
+    // ── Public API ────────────────────────────────────────────────────────
+    public void Show(BossData left, BossData right, string matName, int matAmt)
     {
-        if (root == null) return;
+        if (overlay == null) return;
 
-        int nextDepth = PathManager.Instance != null
-            ? PathManager.Instance.CurrentDepth + 1
-            : 1;
-        bool currentlyLeft = PathManager.Instance?.OnLeftSide ?? true;
+        pendingLeft  = left;
+        pendingRight = right;
 
-        depthText.text = $"DEPTH {nextDepth} / 4";
+        int depth = PathManager.Instance != null ? PathManager.Instance.CurrentDepth + 1 : 1;
+        bool onLeft = PathManager.Instance?.OnLeftSide ?? true;
 
-        // Populate left panel
-        if (leftChoice != null)
-            PopulatePanel(leftChoice,
-                leftNameText, leftRewardText, leftRoomText,
-                leftDescText, leftSideLabel, leftBorder,
-                isLeft: true, currentlyLeft: currentlyLeft);
+        depthText.text = $"DEPTH {depth} / 4";
 
-        // Populate right panel
-        if (rightChoice != null)
-            PopulatePanel(rightChoice,
-                rightNameText, rightRewardText, rightRoomText,
-                rightDescText, rightSideLabel, rightBorder,
-                isLeft: false, currentlyLeft: currentlyLeft);
+        if (left  != null) FillCard(left,  leftName,  leftReward,  leftRoom,  leftDesc,  leftSide,  leftBorder,  side: true,  onLeft);
+        if (right != null) FillCard(right, rightName, rightReward, rightRoom, rightDesc, rightSide, rightBorder, side: false, onLeft);
 
-        // Material earned notice
-        materialEarnedText.text = materialAmount > 0
-            ? $"BOSS DROP: {materialAmount}x {materialEarned} collected"
-            : "";
+        materialText.text = matAmt > 0 ? $"BOSS DROP: +{matAmt}x {matName} collected!" : "";
 
-        root.SetActive(true);
-        Time.timeScale = 0f;   // pause game while choosing
+        overlay.SetActive(true);
+        Time.timeScale = 0f;
     }
 
-    /// <summary>Hide the path selection screen and resume play.</summary>
     public void Hide()
     {
-        if (root != null)
-            root.SetActive(false);
+        if (overlay != null) overlay.SetActive(false);
         Time.timeScale = 1f;
     }
 
-    // ── Private helpers ────────────────────────────────────────────────────
-
-    void OnPanelClicked(bool goLeft)
+    // ── Private ───────────────────────────────────────────────────────────
+    void OnChoose(bool goLeft)
     {
         Hide();
         PathManager.Instance?.ChoosePath(goLeft);
     }
 
-    void PopulatePanel(BossData data,
-        Text nameT, Text rewardT, Text roomT,
-        Text descT, Text sideT, Image border,
-        bool isLeft, bool currentlyLeft)
+    void FillCard(BossData data,
+        Text nameT, Text rewardT, Text roomT, Text descT, Text sideT,
+        Image border, bool side, bool currentlyLeft)
     {
         nameT.text   = data.Name;
-        rewardT.text = $"{data.MaterialReward}x {data.MaterialName}";
-        roomT.text   = $"[{data.RoomType.ToString().ToUpper()}]";
-        descT.text   = data.Description + "\n\n" + data.AttackPatternDesc;
+        rewardT.text = $"DROP: {data.MaterialReward}x {data.MaterialName}";
+        roomT.text   = $"[{data.RoomType.ToString().ToUpper()} PATH]";
+        descT.text   = data.Description;
 
-        bool staying = (isLeft == currentlyLeft);
-        sideT.text  = staying ? "STAY" : "CROSS";
-        sideT.color = staying
-            ? new Color(0.4f, 1f, 0.4f)
-            : new Color(1f, 0.6f, 0.2f);
+        bool staying = (side == currentlyLeft);
+        sideT.text  = staying ? "▶ STAY ON PATH" : "↔ CROSS TO THIS PATH";
+        sideT.color = staying ? new Color(0.3f, 1f, 0.3f) : new Color(1f, 0.65f, 0.1f);
 
         if (border != null)
         {
-            Color c = data.ThemeColor;
-            c.a = 0.85f;
+            var c = data.ThemeColor;
+            c.a = 1f;
             border.color = c;
         }
     }
 
-    // ── UI factory helpers ─────────────────────────────────────────────────
-
-    static GameObject MakePanel(GameObject parent, string name, Color color,
+    GameObject BuildCard(Transform parent,
         Vector2 anchorMin, Vector2 anchorMax,
-        Vector2 offsetMin, Vector2 offsetMax)
+        ref Image border, ref Text nameT, ref Text rewardT,
+        ref Text roomT, ref Text descT, ref Text sideT)
     {
-        var go = new GameObject(name);
-        go.transform.SetParent(parent.transform, false);
+        // Background
+        var card = MakePanel(parent, "Card", new Color(0.08f, 0.09f, 0.15f, 1f), anchorMin, anchorMax);
 
-        var img   = go.AddComponent<Image>();
-        img.color = color;
+        // Coloured border strip (left edge)
+        var borderGO = MakePanel(card.transform, "Border",
+            Color.white,
+            new Vector2(0f, 0f), new Vector2(0.018f, 1f));
+        border = borderGO.GetComponent<Image>();
 
-        var rt          = go.GetComponent<RectTransform>();
-        rt.anchorMin    = anchorMin;
-        rt.anchorMax    = anchorMax;
-        rt.offsetMin    = offsetMin;
-        rt.offsetMax    = offsetMax;
+        // Texts
+        nameT   = MakeText(card.transform, data: "",  size: 26, style: FontStyle.Bold,
+            anchor: TextAnchor.MiddleCenter, col: Color.white,
+            aMin: new Vector2(0.05f, 0.79f), aMax: new Vector2(0.95f, 0.97f));
 
-        return go;
+        rewardT = MakeText(card.transform, data: "",  size: 15, style: FontStyle.Normal,
+            anchor: TextAnchor.MiddleCenter, col: new Color(1f, 0.9f, 0.3f),
+            aMin: new Vector2(0.05f, 0.67f), aMax: new Vector2(0.95f, 0.80f));
+
+        roomT   = MakeText(card.transform, data: "",  size: 14, style: FontStyle.Italic,
+            anchor: TextAnchor.MiddleCenter, col: new Color(0.5f, 0.8f, 1f),
+            aMin: new Vector2(0.05f, 0.57f), aMax: new Vector2(0.95f, 0.68f));
+
+        descT   = MakeText(card.transform, data: "",  size: 13, style: FontStyle.Normal,
+            anchor: TextAnchor.UpperCenter, col: new Color(0.78f, 0.78f, 0.78f),
+            aMin: new Vector2(0.05f, 0.27f), aMax: new Vector2(0.95f, 0.57f));
+
+        sideT   = MakeText(card.transform, data: "",  size: 16, style: FontStyle.Bold,
+            anchor: TextAnchor.MiddleCenter, col: Color.white,
+            aMin: new Vector2(0.05f, 0.06f), aMax: new Vector2(0.95f, 0.26f));
+
+        return card;
     }
 
-    static Image MakeOutline(GameObject parent, string name, Color color)
-    {
-        var go = new GameObject(name);
-        go.transform.SetParent(parent.transform, false);
-
-        var img   = go.AddComponent<Image>();
-        img.color = color;
-        img.type  = Image.Type.Simple;
-
-        var rt       = go.GetComponent<RectTransform>();
-        rt.anchorMin = Vector2.zero;
-        rt.anchorMax = Vector2.one;
-        rt.offsetMin = new Vector2(-4f, -4f);
-        rt.offsetMax = new Vector2( 4f,  4f);
-
-        // Send outline behind child text elements
-        go.transform.SetAsFirstSibling();
-
-        return img;
-    }
-
-    static Text MakeText(GameObject parent, string name, string content,
-        int fontSize, FontStyle fontStyle, TextAnchor anchor, Color color,
+    // ── UI Factories ──────────────────────────────────────────────────────
+    static GameObject MakePanel(Transform parent, string name, Color col,
         Vector2 anchorMin, Vector2 anchorMax)
     {
-        var go = new GameObject(name);
-        go.transform.SetParent(parent.transform, false);
-
-        var t          = go.AddComponent<Text>();
-        t.text         = content;
-        t.fontSize     = fontSize;
-        t.fontStyle    = fontStyle;
-        t.alignment    = anchor;
-        t.color        = color;
-        t.font         = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        t.resizeTextForBestFit = false;
-
-        var rt       = go.GetComponent<RectTransform>();
+        var go  = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        var img = go.AddComponent<Image>();
+        img.color = col;
+        var rt  = img.rectTransform;
         rt.anchorMin = anchorMin;
         rt.anchorMax = anchorMax;
         rt.offsetMin = Vector2.zero;
         rt.offsetMax = Vector2.zero;
+        return go;
+    }
 
+    Font GetFont()
+    {
+        var f = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        if (!f) f = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        return f;
+    }
+
+    Text MakeText(Transform parent, string data, int size, FontStyle style,
+        TextAnchor anchor, Color col, Vector2 aMin, Vector2 aMax)
+    {
+        var go = new GameObject("T");
+        go.transform.SetParent(parent, false);
+        var t           = go.AddComponent<Text>();
+        t.text          = data;
+        t.fontSize      = size;
+        t.fontStyle     = style;
+        t.alignment     = anchor;
+        t.color         = col;
+        t.font          = GetFont();
+        t.horizontalOverflow = HorizontalWrapMode.Wrap;
+        t.verticalOverflow   = VerticalWrapMode.Overflow;
+        var rt          = t.rectTransform;
+        rt.anchorMin    = aMin;
+        rt.anchorMax    = aMax;
+        rt.offsetMin    = new Vector2(8f, 4f);
+        rt.offsetMax    = new Vector2(-8f, -4f);
         return t;
     }
 }

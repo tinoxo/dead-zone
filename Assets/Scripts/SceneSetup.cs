@@ -204,6 +204,7 @@ public class SceneSetup : MonoBehaviour
         // Path map (shown between bosses)
         var pathGO = new GameObject("PathMapUI");
         pathGO.transform.SetParent(canvasGO.transform, false);
-        pathGO.AddComponent<PathMapUI>();
+        var pathUI = pathGO.AddComponent<PathMapUI>();
+        pathUI.Build(canvas);
     }
 }
