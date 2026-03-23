@@ -79,11 +79,16 @@ public class GameManager : MonoBehaviour
 
     public void UpgradePicked()
     {
-        // Segment mode: spawn the door now that the boon has been picked
+        // Segment mode: re-enable player movement then spawn the door
         if (PathManager.Instance != null)
+        {
+            State = GameState.Playing;
             WaveManager.Instance?.ShowExitDoor(pendingDoorType);
+        }
         else
+        {
             NextWave();
+        }
     }
 
     public void EnemyKilled(int pts)
