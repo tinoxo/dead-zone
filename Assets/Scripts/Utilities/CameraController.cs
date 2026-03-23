@@ -31,11 +31,11 @@ public class CameraController : MonoBehaviour
 
         transform.position = Vector3.Lerp(transform.position, desired, SmoothSpeed * Time.deltaTime);
 
-        // Screen shake
+        // Screen shake — use unscaledDeltaTime so it always expires even when timeScale=0
         if (ShakeDuration > 0)
         {
             transform.position += (Vector3)Random.insideUnitCircle * ShakeMagnitude;
-            ShakeDuration -= Time.deltaTime;
+            ShakeDuration -= Time.unscaledDeltaTime;
         }
     }
 

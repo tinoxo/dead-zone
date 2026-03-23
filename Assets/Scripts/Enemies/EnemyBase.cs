@@ -30,7 +30,9 @@ public abstract class EnemyBase : MonoBehaviour
     protected virtual void Update()
     {
         if (dead) return;
-        if (GameManager.Instance?.State != GameState.Playing) { rb.linearVelocity = Vector2.zero; return; }
+        var st = GameManager.Instance?.State;
+        bool canAct = st == GameState.Playing || st == GameState.BossTime;
+        if (!canAct) { rb.linearVelocity = Vector2.zero; return; }
         if (player == null) player = PlayerController.Instance?.transform;
         DoUpdate();
     }
