@@ -53,8 +53,66 @@ public abstract class EnemyBase : MonoBehaviour
         dead = true;
         GameManager.Instance?.EnemyKilled(ScoreValue);
         SpawnDeathBurst();
+
+        // Vampiric item — heal player on kill
+        if (PlayerStats.Instance?.HasItem(ItemEffectType.Vampiric) == true)
+            PlayerController.Instance?.HealPercent(0.03f);
+
         WaveManager.Instance?.OnEnemyDied(this);
         Destroy(gameObject);
+    }
+
+    // ── Status effects ────────────────────────────────────────────────────
+
+    bool poisoned;
+
+    public void ApplyPoison(float dps, float duration)
+    {
+        if (!poisoned) StartCoroutine(PoisonRoutine(dps, duration));
+    }
+
+    System.Collections.IEnumerator PoisonRoutine(float dps, float duration)
+    {
+        poisoned = true;
+        Color orig = sr ? sr.color : Color.green;
+        float elapsed = 0f;
+        while (elapsed < duration && !dead)
+        {
+            yield return new WaitForSeconds(0.5f);
+            elapsed += 0.5f;
+            if (!dead)
+            {
+                TakeDamage(dps * 0.5f);
+                // Green flash
+                if (sr) { sr.color = new Color(0.3f, 1f, 0.3f); }
+                yield return new WaitForSeconds(0.05f);
+                if (sr && !dead) sr.color = orig;
+            }
+        }
+        poisoned = false;
+    }
+
+    bool slowed;
+
+    public void ApplySlow(float factor, float duration)
+    {
+        if (!slowed) StartCoroutine(SlowRoutine(factor, duration));
+    }
+
+    System.Collections.IEnumerator SlowRoutine(float factor, float duration)
+    {
+        slowed = true;
+        float origSpeed = MoveSpeed;
+        MoveSpeed *= factor;
+        Color orig = sr ? sr.color : Color.white;
+        if (sr) sr.color = new Color(0.5f, 0.75f, 1f);  // icy blue tint
+        yield return new WaitForSeconds(duration);
+        if (!dead)
+        {
+            MoveSpeed = origSpeed;
+            if (sr) sr.color = orig;
+        }
+        slowed = false;
     }
 
     void SpawnDeathBurst()

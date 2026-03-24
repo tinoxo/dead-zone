@@ -90,6 +90,10 @@ public class PlayerController : MonoBehaviour
         Vector2 dir   = (mouse - transform.position).normalized;
         SpawnBullet(dir);
 
+        // Double Shot — second bullet slightly offset
+        if (stats.HasItem(ItemEffectType.DoubleShot))
+            SpawnBullet(Rotate(dir, 14f));
+
         if (stats.SplitShot)
         {
             float spread = 22f;

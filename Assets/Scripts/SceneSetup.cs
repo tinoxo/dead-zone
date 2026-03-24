@@ -26,9 +26,21 @@ public class SceneSetup : MonoBehaviour
 
     void Start()
     {
-        // Apply selected character modifiers before game starts
         ApplyCharacter();
+        GiveStartingItems();   // give all items so effects can be tested immediately
         GameManager.Instance.StartGame();
+    }
+
+    /// <summary>Adds every item to the player's active list for effect testing.</summary>
+    void GiveStartingItems()
+    {
+        var s = PlayerStats.Instance;
+        if (s == null) return;
+        foreach (var item in ItemDefinition.All)
+        {
+            s.AddItem(item);
+            if (item.EffectType == ItemEffectType.GhostBlade) s.Piercing = true;
+        }
     }
 
     void ApplyCharacter()
@@ -64,6 +76,7 @@ public class SceneSetup : MonoBehaviour
         gm.AddComponent<GoldSystem>();
         gm.AddComponent<MaterialSystem>();
         gm.AddComponent<ItemManager>();
+        gm.AddComponent<BoonManager>();
     }
 
     // ── Arena walls ───────────────────────────────────────────────────────
@@ -83,6 +96,7 @@ public class SceneSetup : MonoBehaviour
     {
         var go  = new GameObject(name);
         go.transform.position = pos;
+        go.AddComponent<ArenaWall>();   // marker so bullets can detect walls for bouncing
         var col = go.AddComponent<BoxCollider2D>();
         col.size = size;
 

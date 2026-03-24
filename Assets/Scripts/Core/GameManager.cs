@@ -72,9 +72,9 @@ public class GameManager : MonoBehaviour
     public void WaveCleared_Segment(DoorRoomType doorType)
     {
         pendingDoorType = doorType;
-        State = GameState.Upgrading;
-        bool isBoss = doorType == DoorRoomType.Boss;
-        UpgradeManager.Instance?.ShowUpgradeSelection(isBoss);
+        // Player stays mobile — BoonManager spawns physical orbs to walk into.
+        // Door appears only after a boon is picked (BoonManager calls ShowExitDoor).
+        BoonManager.Instance?.SpawnChoices(doorType);
     }
 
     public void UpgradePicked()
