@@ -39,6 +39,12 @@ public class DebugItemMenu : MonoBehaviour
 
     void Start()
     {
+        // Must fill the canvas so right-edge anchors resolve to the actual screen edge
+        var rt       = GetComponent<RectTransform>();
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = rt.offsetMax = Vector2.zero;
+
         int n  = ItemDefinition.All.Count;
         itemOn     = new bool[n];
         btnImages  = new Image[n];

@@ -226,7 +226,6 @@ public class GameManager : MonoBehaviour
         if (State == GameState.Dead) return;
         State = GameState.Dead;
         Debug.Log("[GameManager] Player WON — run complete!");
-        // For now reuse the death screen to show the victory score; future: dedicated win screen
-        DeathScreenUI.Instance?.Show(Wave, Score, TotalKills);
+        DeathScreenUI.Instance?.ShowWin(Wave, Score, TotalKills);
     }
 }
