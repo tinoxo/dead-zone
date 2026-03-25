@@ -3,156 +3,282 @@ using UnityEngine.UI;
 using System.Collections;
 
 /// <summary>
-/// Terraria-style slide-in debug panel on the right edge of the screen.
-/// A small tab always sticks out — click it to slide the panel in/out.
-/// Toggle items on/off one at a time so you can test effects without lag.
+/// Grammarly-style slide-in debug panel.
+/// A floating pill badge sticks out from the right edge — click it to
+/// slide the item panel in/out. Items are scrollable, toggled individually.
 /// </summary>
 public class DebugItemMenu : MonoBehaviour
 {
-    // ── Layout ────────────────────────────────────────────────────────────
-    const float PANEL_W  = 310f;
-    const float TAB_W    =  44f;   // wider so it's easy to click
-    const float HEADER_H =  30f;
-    const float ROW_H    =  36f;
+    const float PANEL_W = 300f;
+    const float PILL_W  =  48f;
+    const float PILL_H  =  92f;
+    const float HDR_H   =  44f;
+    const float ROW_H   =  42f;
 
-    // ── State ─────────────────────────────────────────────────────────────
-    RectTransform containerRT;
+    RectTransform panelRT;
     Text          arrowText;
     bool          isOpen;
     bool          animating;
 
     bool[]  itemOn;
-    Image[] btnImages;
-    Text[]  btnLabels;
+    Image[] btnImg;
+    Text[]  btnLbl;
 
-    // ── Colours ───────────────────────────────────────────────────────────
-    static readonly Color C_BG      = new Color(0.05f, 0.05f, 0.09f, 0.97f);
-    static readonly Color C_TAB     = new Color(0.18f, 0.22f, 0.42f, 1.00f);  // more visible blue-purple
-    static readonly Color C_HDR     = new Color(0.10f, 0.12f, 0.20f, 1.00f);
-    static readonly Color C_ROW0    = new Color(0.08f, 0.08f, 0.12f, 1.00f);
-    static readonly Color C_ROW1    = new Color(0.06f, 0.06f, 0.10f, 1.00f);
-    static readonly Color C_ACCENT  = new Color(0.38f, 0.52f, 1.00f, 1.00f);
-    static readonly Color C_ON      = new Color(0.14f, 0.72f, 0.26f, 1.00f);
-    static readonly Color C_OFF     = new Color(0.22f, 0.22f, 0.28f, 1.00f);
+    static readonly Color C_BG     = new Color(0.06f, 0.07f, 0.12f, 0.98f);
+    static readonly Color C_PILL   = new Color(0.15f, 0.19f, 0.36f, 1.00f);
+    static readonly Color C_ACCENT = new Color(0.40f, 0.58f, 1.00f, 1.00f);
+    static readonly Color C_HDR    = new Color(0.10f, 0.13f, 0.23f, 1.00f);
+    static readonly Color C_EVEN   = new Color(0.09f, 0.10f, 0.15f, 1.00f);
+    static readonly Color C_ODD    = new Color(0.07f, 0.08f, 0.12f, 1.00f);
+    static readonly Color C_ON     = new Color(0.12f, 0.68f, 0.24f, 1.00f);
+    static readonly Color C_OFF    = new Color(0.22f, 0.22f, 0.28f, 1.00f);
 
-    // ── Build ─────────────────────────────────────────────────────────────
+    // ── Init ──────────────────────────────────────────────────────────────
 
     void Start()
     {
-        // Must fill the canvas so right-edge anchors resolve to the actual screen edge
-        var rt       = GetComponent<RectTransform>();
-        rt.anchorMin = Vector2.zero;
-        rt.anchorMax = Vector2.one;
-        rt.offsetMin = rt.offsetMax = Vector2.zero;
+        // Fill the canvas so anchors reference the actual screen edges
+        var self      = GetComponent<RectTransform>();
+        self.anchorMin = Vector2.zero;
+        self.anchorMax = Vector2.one;
+        self.offsetMin = self.offsetMax = Vector2.zero;
 
         int n  = ItemDefinition.All.Count;
-        itemOn     = new bool[n];
-        btnImages  = new Image[n];
-        btnLabels  = new Text[n];
+        itemOn = new bool[n];
+        btnImg = new Image[n];
+        btnLbl = new Text[n];
         Build();
     }
 
+    // ── Build ─────────────────────────────────────────────────────────────
+
     void Build()
     {
-        int   n       = ItemDefinition.All.Count;
-        float totalH  = HEADER_H + n * ROW_H;
+        BuildPill();
+        BuildPanel();
+    }
 
-        // ── Container ────────────────────────────────────────────────────
-        // Pivot at right edge so sliding anchoredPosition.x = PANEL_W
-        // pushes the panel off-screen while leaving the TAB_W tab visible.
-        var cGO = new GameObject("Container");
-        containerRT = cGO.AddComponent<RectTransform>();
-        containerRT.SetParent(transform, false);
-        containerRT.anchorMin        = new Vector2(1f, 0.5f);
-        containerRT.anchorMax        = new Vector2(1f, 0.5f);
-        containerRT.pivot            = new Vector2(1f, 0.5f);
-        containerRT.sizeDelta        = new Vector2(PANEL_W + TAB_W, totalH);
-        containerRT.anchoredPosition = new Vector2(PANEL_W, 0f);   // start closed
+    /// <summary>Floating badge that sticks out from the right edge at all times.</summary>
+    void BuildPill()
+    {
+        var go = new GameObject("DebugPill");
+        go.transform.SetParent(transform, false);
 
-        // ── Tab (leftmost strip, always visible when closed) ──────────────
-        var tabGO = Child("Tab", containerRT);
-        Anchor(tabGO, new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(0f, 0f), new Vector2(TAB_W, 0f));
-        tabGO.AddComponent<Image>().color = C_TAB;
+        var rt           = go.AddComponent<RectTransform>();
+        rt.anchorMin     = new Vector2(1f, 0.55f);
+        rt.anchorMax     = new Vector2(1f, 0.55f);
+        rt.pivot         = new Vector2(1f, 0.5f);
+        rt.sizeDelta     = new Vector2(PILL_W, PILL_H);
+        rt.anchoredPosition = Vector2.zero;   // flush with right edge
 
-        // Blue accent line on the left edge of tab
-        var acGO = Child("Accent", tabGO.transform);
-        Anchor(acGO, Vector2.zero, new Vector2(0f, 1f), new Vector2(0f, 4f), new Vector2(3f, -4f));
-        acGO.AddComponent<Image>().color = C_ACCENT;
+        // Pill background
+        var img   = go.AddComponent<Image>();
+        img.color = C_PILL;
 
-        // Arrow icon centred in tab
-        arrowText = Txt(tabGO.transform, "◄", 16, FontStyle.Bold, new Color(0.8f, 0.85f, 1f), TextAnchor.MiddleCenter);
+        // Left accent stripe
+        var acc = new GameObject("Stripe");
+        acc.transform.SetParent(go.transform, false);
+        var aRT           = acc.AddComponent<RectTransform>();
+        aRT.anchorMin     = new Vector2(0f, 0f);
+        aRT.anchorMax     = new Vector2(0f, 1f);
+        aRT.pivot         = new Vector2(0f, 0.5f);
+        aRT.sizeDelta     = new Vector2(4f, 0f);
+        aRT.offsetMin     = new Vector2(0f, 6f);
+        aRT.offsetMax     = new Vector2(4f, -6f);
+        acc.AddComponent<Image>().color = C_ACCENT;
 
-        // Clickable
-        var tabBtn = tabGO.AddComponent<Button>();
-        tabBtn.targetGraphic = tabGO.GetComponent<Image>();
-        var tc = tabBtn.colors;
-        tc.highlightedColor = new Color(0.18f, 0.20f, 0.32f);
-        tc.pressedColor     = new Color(0.25f, 0.28f, 0.45f);
-        tabBtn.colors = tc;
-        tabBtn.onClick.AddListener(TogglePanel);
-        NoNav(tabBtn);
+        // Arrow icon (top portion)
+        var aGO = new GameObject("Arrow");
+        aGO.transform.SetParent(go.transform, false);
+        var aRt       = aGO.AddComponent<RectTransform>();
+        aRt.anchorMin = new Vector2(0f, 0.42f);
+        aRt.anchorMax = Vector2.one;
+        aRt.offsetMin = aRt.offsetMax = Vector2.zero;
+        arrowText       = aGO.AddComponent<Text>();
+        arrowText.text  = "◄";
+        arrowText.fontSize  = 16;
+        arrowText.fontStyle = FontStyle.Bold;
+        arrowText.alignment = TextAnchor.MiddleCenter;
+        arrowText.color     = new Color(0.78f, 0.85f, 1f);
+        arrowText.font      = GetFont();
+        arrowText.horizontalOverflow = HorizontalWrapMode.Overflow;
+        arrowText.verticalOverflow   = VerticalWrapMode.Overflow;
 
-        // ── Panel (fills rest of container, right of tab) ─────────────────
-        var pGO = Child("Panel", containerRT);
-        Anchor(pGO, Vector2.zero, Vector2.one, new Vector2(TAB_W, 0f), Vector2.zero);
-        pGO.AddComponent<Image>().color = C_BG;
+        // "ITEMS" label (bottom portion)
+        var lGO = new GameObject("Label");
+        lGO.transform.SetParent(go.transform, false);
+        var lRt       = lGO.AddComponent<RectTransform>();
+        lRt.anchorMin = Vector2.zero;
+        lRt.anchorMax = new Vector2(1f, 0.44f);
+        lRt.offsetMin = lRt.offsetMax = Vector2.zero;
+        var lTxt       = lGO.AddComponent<Text>();
+        lTxt.text      = "ITEMS";
+        lTxt.fontSize  = 9;
+        lTxt.fontStyle = FontStyle.Bold;
+        lTxt.alignment = TextAnchor.MiddleCenter;
+        lTxt.color     = new Color(0.50f, 0.58f, 0.80f);
+        lTxt.font      = GetFont();
+        lTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
+        lTxt.verticalOverflow   = VerticalWrapMode.Overflow;
 
-        // Left border
-        var bdr = Child("Border", pGO.transform);
-        Anchor(bdr, Vector2.zero, new Vector2(0f, 1f), new Vector2(0f, 0f), new Vector2(1f, 0f));
+        // Button covers entire pill
+        var btn = go.AddComponent<Button>();
+        btn.targetGraphic = img;
+        var col = btn.colors;
+        col.highlightedColor = new Color(0.24f, 0.29f, 0.52f);
+        col.pressedColor     = new Color(0.30f, 0.36f, 0.65f);
+        btn.colors = col;
+        btn.onClick.AddListener(TogglePanel);
+        NoNav(btn);
+    }
+
+    /// <summary>The slide-in panel anchored to the right edge, behind the pill.</summary>
+    void BuildPanel()
+    {
+        int   n      = ItemDefinition.All.Count;
+        float contentH = n * ROW_H;
+
+        var go = new GameObject("DebugPanel");
+        go.transform.SetParent(transform, false);
+
+        panelRT              = go.AddComponent<RectTransform>();
+        panelRT.anchorMin    = new Vector2(1f, 0f);
+        panelRT.anchorMax    = new Vector2(1f, 1f);
+        panelRT.pivot        = new Vector2(1f, 0.5f);
+        panelRT.sizeDelta    = new Vector2(PANEL_W, 0f);
+        panelRT.anchoredPosition = new Vector2(PANEL_W, 0f);  // start off-screen
+
+        go.AddComponent<Image>().color = C_BG;
+
+        // Left border line
+        var bdr = new GameObject("Border");
+        bdr.transform.SetParent(go.transform, false);
+        var bRT       = bdr.AddComponent<RectTransform>();
+        bRT.anchorMin = new Vector2(0f, 0f);
+        bRT.anchorMax = new Vector2(0f, 1f);
+        bRT.pivot     = new Vector2(0f, 0.5f);
+        bRT.sizeDelta = new Vector2(2f, 0f);
         bdr.AddComponent<Image>().color = C_ACCENT;
 
-        // Header
-        var hdr = Child("Header", pGO.transform);
-        Anchor(hdr, new Vector2(0f, 1f), Vector2.one, new Vector2(0f, -HEADER_H), Vector2.zero);
+        // ── Header ────────────────────────────────────────────────────────
+        var hdr = new GameObject("Header");
+        hdr.transform.SetParent(go.transform, false);
+        var hRT       = hdr.AddComponent<RectTransform>();
+        hRT.anchorMin = new Vector2(0f, 1f);
+        hRT.anchorMax = Vector2.one;
+        hRT.offsetMin = new Vector2(0f, -HDR_H);
+        hRT.offsetMax = Vector2.zero;
         hdr.AddComponent<Image>().color = C_HDR;
-        Txt(hdr.transform, "◆  DEBUG ITEMS", 11, FontStyle.Bold,
-            new Color(0.60f, 0.65f, 0.80f), TextAnchor.MiddleCenter);
 
-        // Item rows
+        var hTxt       = hdr.AddComponent<Text>();
+        hTxt.text      = "◆  DEBUG ITEMS";
+        hTxt.fontSize  = 12;
+        hTxt.fontStyle = FontStyle.Bold;
+        hTxt.alignment = TextAnchor.MiddleCenter;
+        hTxt.color     = new Color(0.60f, 0.68f, 0.88f);
+        hTxt.font      = GetFont();
+        hTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
+        hTxt.verticalOverflow   = VerticalWrapMode.Overflow;
+
+        // ── ScrollRect ────────────────────────────────────────────────────
+        var scrGO = new GameObject("Scroll");
+        scrGO.transform.SetParent(go.transform, false);
+        var scrRT     = scrGO.AddComponent<RectTransform>();
+        scrRT.anchorMin = new Vector2(0f, 0f);
+        scrRT.anchorMax = new Vector2(1f, 1f);
+        scrRT.offsetMin = new Vector2(0f, 0f);
+        scrRT.offsetMax = new Vector2(0f, -HDR_H);
+        var scr       = scrGO.AddComponent<ScrollRect>();
+        scr.horizontal     = false;
+        scr.vertical       = true;
+        scr.scrollSensitivity = 25f;
+        scrGO.AddComponent<Image>().color = Color.clear;  // needed for scroll input
+
+        // Viewport
+        var vpGO = new GameObject("Viewport");
+        vpGO.transform.SetParent(scrGO.transform, false);
+        var vpRT      = vpGO.AddComponent<RectTransform>();
+        vpRT.anchorMin = Vector2.zero;
+        vpRT.anchorMax = Vector2.one;
+        vpRT.offsetMin = vpRT.offsetMax = Vector2.zero;
+        vpGO.AddComponent<Image>().color = Color.clear;
+        vpGO.AddComponent<RectMask2D>();
+        scr.viewport = vpRT;
+
+        // Content container
+        var ctGO = new GameObject("Content");
+        ctGO.transform.SetParent(vpGO.transform, false);
+        var ctRT      = ctGO.AddComponent<RectTransform>();
+        ctRT.anchorMin = new Vector2(0f, 1f);
+        ctRT.anchorMax = Vector2.one;
+        ctRT.pivot     = new Vector2(0.5f, 1f);
+        ctRT.offsetMin = new Vector2(0f, -contentH);
+        ctRT.offsetMax = Vector2.zero;
+        scr.content    = ctRT;
+
+        // ── Item rows ─────────────────────────────────────────────────────
         for (int i = 0; i < n; i++)
         {
-            int  idx = i;
-            var  def = ItemDefinition.All[i];
-            float y0 = -(HEADER_H + (i + 1) * ROW_H);
-            float y1 = -(HEADER_H +  i      * ROW_H);
+            int  idx  = i;
+            var  def  = ItemDefinition.All[i];
+            float yTop = -i * ROW_H;
+            float yBot = -(i + 1) * ROW_H;
 
-            var row = Child("Row" + i, pGO.transform);
-            Anchor(row, new Vector2(0f, 1f), new Vector2(1f, 1f),
-                        new Vector2(1f, y0), new Vector2(0f, y1));
-            row.AddComponent<Image>().color = (i % 2 == 0) ? C_ROW0 : C_ROW1;
+            var row = new GameObject("Row" + i);
+            row.transform.SetParent(ctGO.transform, false);
+            var rRT       = row.AddComponent<RectTransform>();
+            rRT.anchorMin = new Vector2(0f, 1f);
+            rRT.anchorMax = new Vector2(1f, 1f);
+            rRT.offsetMin = new Vector2(0f, yBot);
+            rRT.offsetMax = new Vector2(0f, yTop);
+            row.AddComponent<Image>().color = (i % 2 == 0) ? C_EVEN : C_ODD;
 
-            // Rarity bar
-            var bar = Child("Bar", row.transform);
-            Anchor(bar, Vector2.zero, new Vector2(0f, 1f),
-                        new Vector2(0f, 3f), new Vector2(4f, -3f));
+            // Rarity colour bar
+            var bar = new GameObject("Bar");
+            bar.transform.SetParent(row.transform, false);
+            var barRT     = bar.AddComponent<RectTransform>();
+            barRT.anchorMin = new Vector2(0f, 0f);
+            barRT.anchorMax = new Vector2(0f, 1f);
+            barRT.offsetMin = new Vector2(0f, 4f);
+            barRT.offsetMax = new Vector2(4f, -4f);
             bar.AddComponent<Image>().color = RarityCol(def.Rarity);
 
-            // Name
-            var nm = Child("Name", row.transform);
-            Anchor(nm, new Vector2(0f, 0.45f), new Vector2(0.72f, 1f),
-                       new Vector2(9f, 0f), new Vector2(-2f, -2f));
-            Txt(nm.transform, def.Name, 11, FontStyle.Bold,
-                RarityCol(def.Rarity), TextAnchor.MiddleLeft);
+            // Item name
+            AddText(row.transform, def.Name, 11, FontStyle.Bold,
+                RarityCol(def.Rarity), TextAnchor.MiddleLeft,
+                new Vector2(8f, 0.46f), new Vector2(0.70f, 1f),
+                new Vector2(0f, 0f), new Vector2(-4f, -2f));
 
             // Description
-            var ds = Child("Desc", row.transform);
-            Anchor(ds, new Vector2(0f, 0f), new Vector2(0.72f, 0.48f),
-                       new Vector2(9f, 2f), new Vector2(-2f, 0f));
-            Txt(ds.transform, def.Description, 8, FontStyle.Normal,
-                new Color(0.50f, 0.50f, 0.56f), TextAnchor.MiddleLeft);
+            AddText(row.transform, def.Description, 8, FontStyle.Normal,
+                new Color(0.48f, 0.50f, 0.56f), TextAnchor.MiddleLeft,
+                new Vector2(8f, 0f), new Vector2(0.70f, 0.50f),
+                new Vector2(0f, 2f), new Vector2(-4f, 0f));
 
-            // Toggle button
-            var btn = Child("Btn", row.transform);
-            Anchor(btn, new Vector2(0.73f, 0.14f), new Vector2(1f, 0.86f),
-                        new Vector2(4f, 0f), new Vector2(-6f, 0f));
-            btnImages[i]       = btn.AddComponent<Image>();
-            btnImages[i].color = C_OFF;
-            btnLabels[i]       = Txt(btn.transform, "OFF", 11, FontStyle.Bold,
-                                     Color.white, TextAnchor.MiddleCenter);
+            // ON / OFF toggle button
+            var btn = new GameObject("Btn");
+            btn.transform.SetParent(row.transform, false);
+            var bRT       = btn.AddComponent<RectTransform>();
+            bRT.anchorMin = new Vector2(0.71f, 0.16f);
+            bRT.anchorMax = new Vector2(1.00f, 0.84f);
+            bRT.offsetMin = new Vector2(4f, 0f);
+            bRT.offsetMax = new Vector2(-8f, 0f);
+            btnImg[i]       = btn.AddComponent<Image>();
+            btnImg[i].color = C_OFF;
+
+            var bTxt       = btn.AddComponent<Text>();
+            bTxt.text      = "OFF";
+            bTxt.fontSize  = 11;
+            bTxt.fontStyle = FontStyle.Bold;
+            bTxt.alignment = TextAnchor.MiddleCenter;
+            bTxt.color     = Color.white;
+            bTxt.font      = GetFont();
+            bTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
+            bTxt.verticalOverflow   = VerticalWrapMode.Overflow;
+            btnLbl[i]      = bTxt;
 
             var b = btn.AddComponent<Button>();
-            b.targetGraphic = btnImages[i];
+            b.targetGraphic = btnImg[i];
             b.onClick.AddListener(() => ToggleItem(idx));
             NoNav(b);
         }
@@ -165,21 +291,21 @@ public class DebugItemMenu : MonoBehaviour
         if (animating) return;
         isOpen = !isOpen;
         arrowText.text = isOpen ? "►" : "◄";
-        StartCoroutine(Slide(isOpen ? 0f : PANEL_W));
+        StartCoroutine(SlidePanel(isOpen ? 0f : PANEL_W));
     }
 
-    IEnumerator Slide(float targetX)
+    IEnumerator SlidePanel(float targetX)
     {
         animating = true;
-        float startX = containerRT.anchoredPosition.x;
-        float dur    = 0.18f;
-        for (float t = 0; t < dur; t += Time.unscaledDeltaTime)
+        float startX = panelRT.anchoredPosition.x;
+        float dur    = 0.20f;
+        for (float t = 0f; t < dur; t += Time.unscaledDeltaTime)
         {
-            float e = 1f - Mathf.Pow(1f - t / dur, 3f);
-            containerRT.anchoredPosition = new Vector2(Mathf.Lerp(startX, targetX, e), 0f);
+            float ease = 1f - Mathf.Pow(1f - t / dur, 3f);
+            panelRT.anchoredPosition = new Vector2(Mathf.Lerp(startX, targetX, ease), 0f);
             yield return null;
         }
-        containerRT.anchoredPosition = new Vector2(targetX, 0f);
+        panelRT.anchoredPosition = new Vector2(targetX, 0f);
         animating = false;
     }
 
@@ -202,44 +328,35 @@ public class DebugItemMenu : MonoBehaviour
                 s.Piercing = false;
         }
 
-        btnImages[idx].color = itemOn[idx] ? C_ON  : C_OFF;
-        btnLabels[idx].text  = itemOn[idx] ? "ON"  : "OFF";
+        btnImg[idx].color = itemOn[idx] ? C_ON  : C_OFF;
+        btnLbl[idx].text  = itemOn[idx] ? "ON"  : "OFF";
     }
 
-    // ── UI helpers ────────────────────────────────────────────────────────
+    // ── Helpers ───────────────────────────────────────────────────────────
 
-    GameObject Child(string name, Transform parent)
+    void AddText(Transform parent,
+        string content, int size, FontStyle style, Color col, TextAnchor align,
+        Vector2 anchorMin, Vector2 anchorMax, Vector2 offsetMin, Vector2 offsetMax)
     {
-        var go = new GameObject(name);
-        go.transform.SetParent(parent, false);
-        go.AddComponent<RectTransform>();
-        return go;
-    }
-
-    void Anchor(GameObject go, Vector2 aMin, Vector2 aMax, Vector2 oMin, Vector2 oMax)
-    {
-        var rt      = go.GetComponent<RectTransform>();
-        rt.anchorMin = aMin;  rt.anchorMax = aMax;
-        rt.offsetMin = oMin;  rt.offsetMax = oMax;
-    }
-
-    Text Txt(Transform parent, string s, int size, FontStyle style, Color col, TextAnchor align)
-    {
+        // anchorMin/Max encode (x_anchor, y_anchor) but for offsetMin we treat x as pixels
+        // Since we mix pixel offsets and normalised anchors, build carefully:
         var go = new GameObject("T");
         go.transform.SetParent(parent, false);
         var t = go.AddComponent<Text>();
-        t.text      = s;
+        t.text      = content;
         t.fontSize  = size;
         t.fontStyle = style;
         t.alignment = align;
         t.color     = col;
         t.font      = GetFont();
-        t.horizontalOverflow = HorizontalWrapMode.Overflow;
+        t.horizontalOverflow = HorizontalWrapMode.Wrap;
         t.verticalOverflow   = VerticalWrapMode.Overflow;
-        var rt      = t.rectTransform;
-        rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
-        rt.offsetMin = new Vector2(4f, 0f); rt.offsetMax = Vector2.zero;
-        return t;
+        var rt = t.rectTransform;
+        // anchorMin.x is pixel left-offset here (hack to pack params) — decode:
+        rt.anchorMin = new Vector2(0f,       anchorMin.y);
+        rt.anchorMax = new Vector2(anchorMax.x, anchorMax.y);
+        rt.offsetMin = new Vector2(anchorMin.x, offsetMin.y);
+        rt.offsetMax = new Vector2(offsetMax.x, offsetMax.y);
     }
 
     void NoNav(Button b)
@@ -252,9 +369,9 @@ public class DebugItemMenu : MonoBehaviour
         switch (r)
         {
             case ItemRarity.Legendary: return new Color(1.0f, 0.75f, 0.10f);
-            case ItemRarity.Rare:      return new Color(0.40f, 0.50f, 1.00f);
-            case ItemRarity.Uncommon:  return new Color(0.20f, 0.90f, 0.30f);
-            default:                   return new Color(0.65f, 0.65f, 0.65f);
+            case ItemRarity.Rare:      return new Color(0.40f, 0.52f, 1.00f);
+            case ItemRarity.Uncommon:  return new Color(0.20f, 0.88f, 0.30f);
+            default:                   return new Color(0.62f, 0.62f, 0.62f);
         }
     }
 
