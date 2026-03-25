@@ -11,7 +11,7 @@ public class DebugItemMenu : MonoBehaviour
 {
     // ── Layout ────────────────────────────────────────────────────────────
     const float PANEL_W  = 310f;
-    const float TAB_W    =  26f;
+    const float TAB_W    =  44f;   // wider so it's easy to click
     const float HEADER_H =  30f;
     const float ROW_H    =  36f;
 
@@ -27,7 +27,7 @@ public class DebugItemMenu : MonoBehaviour
 
     // ── Colours ───────────────────────────────────────────────────────────
     static readonly Color C_BG      = new Color(0.05f, 0.05f, 0.09f, 0.97f);
-    static readonly Color C_TAB     = new Color(0.10f, 0.10f, 0.17f, 1.00f);
+    static readonly Color C_TAB     = new Color(0.18f, 0.22f, 0.42f, 1.00f);  // more visible blue-purple
     static readonly Color C_HDR     = new Color(0.10f, 0.12f, 0.20f, 1.00f);
     static readonly Color C_ROW0    = new Color(0.08f, 0.08f, 0.12f, 1.00f);
     static readonly Color C_ROW1    = new Color(0.06f, 0.06f, 0.10f, 1.00f);
@@ -80,7 +80,7 @@ public class DebugItemMenu : MonoBehaviour
         acGO.AddComponent<Image>().color = C_ACCENT;
 
         // Arrow icon centred in tab
-        arrowText = Txt(tabGO.transform, "◄", 13, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter);
+        arrowText = Txt(tabGO.transform, "◄", 16, FontStyle.Bold, new Color(0.8f, 0.85f, 1f), TextAnchor.MiddleCenter);
 
         // Clickable
         var tabBtn = tabGO.AddComponent<Button>();
