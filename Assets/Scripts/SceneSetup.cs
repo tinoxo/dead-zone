@@ -27,20 +27,7 @@ public class SceneSetup : MonoBehaviour
     void Start()
     {
         ApplyCharacter();
-        GiveStartingItems();   // give all items so effects can be tested immediately
         GameManager.Instance.StartGame();
-    }
-
-    /// <summary>Adds every item to the player's active list for effect testing.</summary>
-    void GiveStartingItems()
-    {
-        var s = PlayerStats.Instance;
-        if (s == null) return;
-        foreach (var item in ItemDefinition.All)
-        {
-            s.AddItem(item);
-            if (item.EffectType == ItemEffectType.GhostBlade) s.Piercing = true;
-        }
     }
 
     void ApplyCharacter()
@@ -221,5 +208,10 @@ public class SceneSetup : MonoBehaviour
         pathGO.transform.SetParent(canvasGO.transform, false);
         var pathUI = pathGO.AddComponent<PathMapUI>();
         pathUI.Build(canvas);
+
+        // Debug item toggle menu
+        var dbgGO = new GameObject("DebugItemMenu");
+        dbgGO.transform.SetParent(canvasGO.transform, false);
+        dbgGO.AddComponent<DebugItemMenu>();
     }
 }
