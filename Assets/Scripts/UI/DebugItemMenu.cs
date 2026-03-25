@@ -258,11 +258,11 @@ public class DebugItemMenu : MonoBehaviour
             // ON / OFF toggle button
             var btn = new GameObject("Btn");
             btn.transform.SetParent(row.transform, false);
-            var bRT       = btn.AddComponent<RectTransform>();
-            bRT.anchorMin = new Vector2(0.71f, 0.16f);
-            bRT.anchorMax = new Vector2(1.00f, 0.84f);
-            bRT.offsetMin = new Vector2(4f, 0f);
-            bRT.offsetMax = new Vector2(-8f, 0f);
+            var btnRT       = btn.AddComponent<RectTransform>();
+            btnRT.anchorMin = new Vector2(0.71f, 0.16f);
+            btnRT.anchorMax = new Vector2(1.00f, 0.84f);
+            btnRT.offsetMin = new Vector2(4f, 0f);
+            btnRT.offsetMax = new Vector2(-8f, 0f);
             btnImg[i]       = btn.AddComponent<Image>();
             btnImg[i].color = C_OFF;
 
