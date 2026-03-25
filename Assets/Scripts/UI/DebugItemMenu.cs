@@ -37,8 +37,11 @@ public class DebugItemMenu : MonoBehaviour
 
     void Start()
     {
+        // Ensure we have a RectTransform (not guaranteed when added via script)
+        var self = GetComponent<RectTransform>();
+        if (self == null) self = gameObject.AddComponent<RectTransform>();
+
         // Fill the canvas so anchors reference the actual screen edges
-        var self      = GetComponent<RectTransform>();
         self.anchorMin = Vector2.zero;
         self.anchorMax = Vector2.one;
         self.offsetMin = self.offsetMax = Vector2.zero;
