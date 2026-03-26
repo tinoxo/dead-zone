@@ -139,7 +139,7 @@ public class MenuSetup : MonoBehaviour
         mainMenuPanel = NewFullPanel("MainMenu");
         DrawGrid(mainMenuPanel.transform);
 
-        var t1 = MakeText(mainMenuPanel.transform, "DEAD ZONE", 88, new Vector2(0, 130));
+        var t1 = MakeText(mainMenuPanel.transform, "???", 88, new Vector2(0, 130));
         t1.color = C_ACCENT; t1.alignment = TextAnchor.MiddleCenter;
         SetRect(t1, new Vector2(800, 110), new Vector2(0, 130));
 
@@ -147,7 +147,7 @@ public class MenuSetup : MonoBehaviour
         t2.color = new Color(0.42f, 0.42f, 0.58f); t2.alignment = TextAnchor.MiddleCenter;
         SetRect(t2, new Vector2(600, 28), new Vector2(0, 58));
 
-        MakeButton(mainMenuPanel.transform, "ENTER THE ZONE",
+        MakeButton(mainMenuPanel.transform, "PLAY",
             new Vector2(0, -70), new Vector2(360, 66), C_ACCENT, 28, ShowCharGrid);
 
         MakeButton(mainMenuPanel.transform, "QUIT",
