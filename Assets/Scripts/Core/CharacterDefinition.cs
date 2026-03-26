@@ -22,6 +22,7 @@ public class CharacterDefinition
     // Special starting flags
     public bool StartPiercing  = false;
     public bool StartSplitShot = false;
+    public bool StartShield    = false;
 
     // Visual
     public Color PrimaryColor;
