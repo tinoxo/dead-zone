@@ -7,8 +7,10 @@ using UnityEngine;
 public static class GameData
 {
     // ── Run-selection (set before loading game scene) ──────────────────────
-    public static int SelectedCharacterIndex = 0;
-    public static int SelectedIslandIndex    = 0;
+    public static int  SelectedCharacterIndex    = 0;
+    public static int  SelectedIslandIndex       = 0;
+    public static bool IsShipRun                 = false;  // true while in the ship battle
+    public static bool ShowIslandSelectOnLoad    = false;  // mainmenu reads this to skip to island select
 
     public static CharacterDefinition SelectedCharacter =>
         CharacterDefinition.All[SelectedCharacterIndex];

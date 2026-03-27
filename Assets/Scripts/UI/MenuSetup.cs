@@ -75,6 +75,16 @@ public class MenuSetup : MonoBehaviour
     int selectedWeapVar = 0;
 
     // ─────────────────────────────────────────────────────────────────────
+    void Start()
+    {
+        // Coming back from ship battle — skip straight to island select
+        if (GameData.ShowIslandSelectOnLoad)
+        {
+            GameData.ShowIslandSelectOnLoad = false;
+            ShowIslandSelect();
+        }
+    }
+
     void Awake()
     {
         font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
@@ -860,7 +870,7 @@ public class MenuSetup : MonoBehaviour
                                         :             "DEPLOYING...";
             yield return null;
         }
-        SceneManager.LoadSceneAsync(1);
+        SceneManager.LoadSceneAsync("DockScene");
     }
 
     // ══════════════════════════════════════════════════════════════════════

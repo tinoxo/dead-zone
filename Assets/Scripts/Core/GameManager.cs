@@ -108,6 +108,15 @@ public class GameManager : MonoBehaviour
 
     public void Restart() => SceneManager.LoadScene(0);
 
+    /// <summary>Ship boss defeated — head back to island select.</summary>
+    public void ShipBossDefeated()
+    {
+        State = GameState.Dead; // freeze player input
+        GameData.IsShipRun            = false;
+        GameData.ShowIslandSelectOnLoad = true;
+        SceneManager.LoadScene("mainmenu");
+    }
+
     // ── Path lattice — boss spawning ───────────────────────────────────────
 
     /// <summary>
