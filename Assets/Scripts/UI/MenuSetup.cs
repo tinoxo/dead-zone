@@ -499,7 +499,8 @@ public class MenuSetup : MonoBehaviour
 
         // ── Buttons ───────────────────────────────────────────────────────
         MakeButton(charDetailPanel.transform, "SET SAIL  ►",
-            new Vector2(220, -310), new Vector2(310, 64), C_ACCENT, 26, ShowIslandSelect);
+            new Vector2(220, -310), new Vector2(310, 64), C_ACCENT, 26,
+            () => StartCoroutine(LoadDock()));
 
         MakeButton(charDetailPanel.transform, "◄ BACK",
             new Vector2(-500, -310), new Vector2(160, 42), new Color(0.28f, 0.28f, 0.38f), 16,
@@ -855,6 +856,7 @@ public class MenuSetup : MonoBehaviour
         fr.sizeDelta = new Vector2(0, 0);
     }
 
+    // Called when player clicks an island — goes straight into the run
     IEnumerator LoadGame()
     {
         loadingPanel.SetActive(true);
@@ -868,6 +870,24 @@ public class MenuSetup : MonoBehaviour
             if (loadText) loadText.text = t < 0.4f ? "ENTERING THE DEAD ZONE..."
                                         : t < 0.8f ? "CALIBRATING SYSTEMS..."
                                         :             "DEPLOYING...";
+            yield return null;
+        }
+        GameData.IsShipRun = false;
+        SceneManager.LoadSceneAsync("SampleScene");
+    }
+
+    // Called by SET SAIL — takes player to dock before ship battle
+    IEnumerator LoadDock()
+    {
+        loadingPanel.SetActive(true);
+        charDetailPanel.SetActive(false);
+        float t = 0f;
+        while (t < 0.8f)
+        {
+            t += Time.deltaTime;
+            float f = Mathf.Clamp01(t / 0.8f);
+            if (loadFill) loadFill.rectTransform.sizeDelta = new Vector2(500f * f, 0);
+            if (loadText) loadText.text = "HEADING TO THE DOCKS...";
             yield return null;
         }
         SceneManager.LoadSceneAsync("DockScene");
